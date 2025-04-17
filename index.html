@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leave Management</title>
+</head>
+<body>
+    <h2 id="leaveDays">You currently have 30 Days of leave left</h2>
+    <div>
+        <label>Start Date: </label>
+        <input type="date" id="startDate">
+    </div>
+    
+    <div>
+        <label>End Date: </label>
+        <input type="date" id="endDate">
+    </div>
+    
+    <div>
+        <label>Number of Days: </label>
+        <input type="number" id="numDays" min="1">
+    </div>
+        
+<script>
+    const heading = document.getElementById("leaveDays");
+    const input = document.getElementById("numDays");
+
+    const text = heading.textContent;
+    const numberMatch = text.match(/\d+/); 
+
+    if (numberMatch) {
+    input.value = numberMatch[0]; 
+    }
+
+
+
+    let publicHolidays = [];
+
+    async function fetchPublicHolidays(startYear, endYear) {
+    const promises = [];
+
+    for (let year = startYear; year <= endYear; year++) {
+        const url = `https://date.nager.at/api/v3/PublicHolidays/${year}/NG`;
+        promises.push(fetch(url).then(res => res.json()));
+    }
+
+    const results = await Promise.all(promises);
+
+    publicHolidays = results.flatMap(yearHolidays =>
+        yearHolidays.map(holiday => holiday.date)
+    );
+    }
+
+    function isWeekend(date) {
+    const day = date.getDay();
+    return day === 0 || day === 6;
+    }
+
+    function isPublicHoliday(date) {
+    const iso = date.toISOString().split('T')[0];
+    return publicHolidays.includes(iso);
+    }
+
+    function isValidWorkDay(date) {
+    return !isWeekend(date) && !isPublicHoliday(date);
+    }
+
+    function calculateEndDate(startDate, days) {
+    let currentDate = new Date(startDate);
+    let addedDays = 0;
+
+    while (addedDays < days) {
+        currentDate.setDate(currentDate.getDate() + 1);
+        if (isValidWorkDay(currentDate)) {
+        addedDays++;
+        }
+    }
+
+    return currentDate;
+    }
+
+    function calculateStartDate(endDate, days) {
+    let currentDate = new Date(endDate);
+    let subtractedDays = 0;
+
+    while (subtractedDays < days) {
+        currentDate.setDate(currentDate.getDate() - 1);
+        if (isValidWorkDay(currentDate)) {
+        subtractedDays++;
+        }
+    }
+
+    return currentDate;
+    }
+
+    const startInput = document.getElementById("startDate");
+    const endInput = document.getElementById("endDate");
+    const daysInput = document.getElementById("numDays");
+
+    startInput.addEventListener("change", () => {
+    const startDate = new Date(startInput.value);
+    const days = parseInt(daysInput.value);
+
+    if (!isNaN(days)) {
+        const endDate = calculateEndDate(startDate, days - 1);
+        endInput.value = endDate.toISOString().split("T")[0];
+    }
+    });
+
+    endInput.addEventListener("change", () => {
+    const endDate = new Date(endInput.value);
+    const days = parseInt(daysInput.value);
+
+    if (!isNaN(days)) {
+        const startDate = calculateStartDate(endDate, days - 1);
+        startInput.value = startDate.toISOString().split("T")[0];
+    }
+    });
+
+    daysInput.addEventListener("input", () => {
+    const startDate = startInput.value ? new Date(startInput.value) : null;
+    const endDate = endInput.value ? new Date(endInput.value) : null;
+    const days = parseInt(daysInput.value);
+
+    if (startDate && !isNaN(days)) {
+        const newEnd = calculateEndDate(startDate, days - 1);
+        endInput.value = newEnd.toISOString().split("T")[0];
+    } else if (endDate && !isNaN(days)) {
+        const newStart = calculateStartDate(endDate, days - 1);
+        startInput.value = newStart.toISOString().split("T")[0];
+    }
+    });
+
+    fetchPublicHolidays(2024, 2050).then(() => {
+    console.log("Nigerian public holidays loaded:", publicHolidays);
+    });
+
+</script>
+<!-- 
+<script>
+    const heading = document.getElementById("leaveDays");
+    const input = document.getElementById("numDays");
+
+    const text = heading.textContent;
+    const numberMatch = text.match(/\d+/);
+    if (numberMatch) {
+        input.value = numberMatch[0];
+        input.max = numberMatch[0];
+    }
+
+    let publicHolidays = [];
+
+    async function fetchPublicHolidays(startYear, endYear) {
+        const promises = [];
+
+        for (let year = startYear; year <= endYear; year++) {
+            const url = `https://date.nager.at/api/v3/PublicHolidays/${year}/NG`;
+            promises.push(fetch(url).then(res => res.json()));
+        }
+
+        const results = await Promise.all(promises);
+
+        publicHolidays = results.flatMap(yearHolidays =>
+            yearHolidays.map(holiday => holiday.date)
+        );
+    }
+
+    function isWeekend(date) {
+        const day = date.getDay();
+        return day === 0 || day === 6;
+    }
+
+    function isPublicHoliday(date) {
+        const iso = date.toISOString().split('T')[0];
+        return publicHolidays.includes(iso);
+    }
+
+    function isValidWorkDay(date) {
+        return !isWeekend(date) && !isPublicHoliday(date);
+    }
+
+    function calculateEndDate(startDate, days) {
+        let currentDate = new Date(startDate);
+        let addedDays = 0;
+
+        while (addedDays < days) {
+            currentDate.setDate(currentDate.getDate() + 1);
+            if (isValidWorkDay(currentDate)) {
+                addedDays++;
+            }
+        }
+
+        return currentDate;
+    }
+
+    function calculateStartDate(endDate, days) {
+        let currentDate = new Date(endDate);
+        let subtractedDays = 0;
+
+        while (subtractedDays < days) {
+            currentDate.setDate(currentDate.getDate() - 1);
+            if (isValidWorkDay(currentDate)) {
+                subtractedDays++;
+            }
+        }
+
+        return currentDate;
+    }
+
+    const startInput = document.getElementById("startDate");
+    const endInput = document.getElementById("endDate");
+    const daysInput = document.getElementById("numDays");
+
+    const today = new Date();
+    const minSelectable = new Date();
+    minSelectable.setDate(today.getDate() - 14);
+    const formattedMin = minSelectable.toISOString().split("T")[0];
+    startInput.min = formattedMin;
+
+    startInput.addEventListener("change", () => {
+        const startDate = new Date(startInput.value);
+        const days = parseInt(daysInput.value);
+
+        if (!isNaN(days)) {
+            const endDate = calculateEndDate(startDate, days - 1);
+            endInput.value = endDate.toISOString().split("T")[0];
+        }
+    });
+
+    endInput.addEventListener("change", () => {
+        const endDate = new Date(endInput.value);
+        const days = parseInt(daysInput.value);
+
+        if (!isNaN(days)) {
+            const startDate = calculateStartDate(endDate, days - 1);
+            startInput.value = startDate.toISOString().split("T")[0];
+        }
+    });
+
+    daysInput.addEventListener("input", () => {
+        const startDate = startInput.value ? new Date(startInput.value) : null;
+        const endDate = endInput.value ? new Date(endInput.value) : null;
+        const days = parseInt(daysInput.value);
+
+        if (startDate && !isNaN(days)) {
+            const newEnd = calculateEndDate(startDate, days - 1);
+            endInput.value = newEnd.toISOString().split("T")[0];
+        } else if (endDate && !isNaN(days)) {
+            const newStart = calculateStartDate(endDate, days - 1);
+            startInput.value = newStart.toISOString().split("T")[0];
+        }
+    });
+
+    fetchPublicHolidays(2024, 2050).then(() => {
+        console.log("Nigerian public holidays loaded:", publicHolidays);
+    });
+</script> -->
+
+
+</body>
+</html>
